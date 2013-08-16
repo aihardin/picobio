@@ -86,7 +86,8 @@ def main(argv):
     
     pdf_file = os.path.splitext(image)[0]+"_%s.pdf"
 
-    seq = str(SeqIO.read(seq_file, "fasta").seq)
+    seq = str(list(SeqIO.parse(seq_file, "fasta"))[0].seq)
+    print len(seq)
     
     #Reduce runs of N to a single N to avoid visual distraction
     reduced = []
