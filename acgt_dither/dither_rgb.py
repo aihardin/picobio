@@ -1,5 +1,9 @@
+# modified from https://raw.github.com/peterjc/picobio/master/acgt_dither/dither_rgb.py
+
 import os
+import sys
 from Bio import SeqIO
+from Bio.Seq import Seq
 import numpy as np
 from PIL import Image
 
@@ -34,6 +38,11 @@ def run(im, seq, pdf_file, main_caption):
     r_max = float(data[:,:,0].max())
     g_max = float(data[:,:,1].max())
     b_max = float(data[:,:,2].max())
+    #r_mean = float(data[:,:,0].mean())
+    #g_mean = float(data[:,:,1].mean())
+    #b_mean = float(data[:,:,2].mean())
+    #r = Rect(0,0,width,height,fillColor=colors.Color(r_mean,g_mean,b_mean))
+    #d.add(r)
     for row in range(shape[0]):
         for col in range(shape[1]):
             #Ignore any alpha channel
@@ -58,54 +67,44 @@ def run(im, seq, pdf_file, main_caption):
 #--> A3: Suggest width 212, height 336 pixels
 #print "A4: Suggest width %i, height %i pixels" % (210 * mm / h_scale, 297 * mm / v_scale) 
 #--> A4: Suggest width 150, height 237 pixels
-
-for name, seq_file in [
-        ("Purple on black 002", "chr06.fasta"),
-        #("Potato field 001", "chr07.fasta"),
-        ("Potato field 002", "chr07.fasta"),
-        ("Potato roots 001", "chr08.fasta"),
-        ("Tractor 001", "chr09.fasta"),
-        ("Potato flower", "chr01.fasta"),
-        #("Potato branch", "chr02.fasta"),
-        ("Potato branch center", "chr02.fasta"),
-        ("new branch 001", "chr02.fasta"),
-        #("Potato tubers", "chr03.fasta"),
-        #("Potato tubers2", "chr03.fasta"),
-        ("Potato tubers 003", "chr03.fasta"),
-        ("Potato leaves", "chr04.fasta"),
-        ("Potato blue flowers", "chr05.fasta"),
-        ("Blue Flower Brown", "chr05.fasta"),
-        ("Blue Flower dark", "chr05.fasta"),
-    ]:
-    stem = name.lower().replace(" ", "_")
-    png_file = "%s.png" % stem
-    png_fileA = "%s_424x672.png" % stem
-    png_fileB = "%s_600x951.png" % stem
-    if not os.path.isfile(png_fileB):
-        png_fileB = png_file
-    if not os.path.isfile(png_fileA):
-        png_fileA = png_fileB
+def main(argv):
+    if len(argv) != 3:
+        sys.stderr.write('usage: dither_rbg.py organism_image single_chromosome.fasta\n')
+        sys.exit()
+    image = argv[1]
+    seq_file = argv[2]
+    if ' ' in image:
+        sys.stderr.write('image name cannot contain spaces, please rename the file\n')
+        sys.exit()
+    if not os.path.isfile(image):
+        sys.stderr.write('cannot find %s\n'%(image))
+        sys.exit()
+    if not os.path.isfile(seq_file):
+        sys.stderr.write('cannot find %s\n'%(seq_file))
+        sys.exit()
     
-    pdf_file = stem + "_%s.pdf"
+    pdf_file = os.path.splitext(image)[0]+"_%s.pdf"
 
     seq = str(SeqIO.read(seq_file, "fasta").seq)
+    
     #Reduce runs of N to a single N to avoid visual distraction
-    while "NNNNN" in seq:
-        seq = seq.replace("NNNNN", "N")
-    while "NN" in seq:
-        seq = seq.replace("NN", "N")
-
-    print "Drawing %s using %s" % (name, seq_file)
-    for name, shape, png_file in [
-            ("A4", (150, 237), png_fileB),
-            ("A3", (212, 336), png_fileA),
-            ("A2", (300, 475), png_fileB),
-            ("A1", (424, 672), png_fileA),
-            ("A0", (600, 951), png_fileB),
-        ]:
-        if not os.path.isfile(png_file):
-            print "Missing %s" % png_file
+    reduced = []
+    reduced.append(seq[0])
+    for i in seq[1:]:
+        if i == 'N' and i == reduced[-1]:
             continue
+        else:
+            reduced.append(i)
+    seq = Seq(''.join(reduced))
+
+    print "Drawing %s using %s" % (image, seq_file)
+    for name, shape, png_file in [
+            ("A4", (150, 237), image),
+            ("A3", (212, 336), image),
+            ("A2", (300, 475), image),
+            ("A1", (424, 672), image),
+            ("A0", (600, 951), image),
+        ]:
         if os.path.isfile(pdf_file % name):
             print "Skipping as %s exists..." % (pdf_file % name)
             continue
@@ -113,3 +112,7 @@ for name, seq_file in [
             % (name, shape[0], shape[1], png_file)
         im = Image.open(png_file).resize(shape)
         run(im, seq, pdf_file % name, name)
+
+if __name__ == '__main__':
+    main(sys.argv)
+    sys.exit()
