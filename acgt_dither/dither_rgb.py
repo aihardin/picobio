@@ -1,4 +1,5 @@
-# modified from https://raw.github.com/peterjc/picobio/master/acgt_dither/dither_rgb.py
+# Original by Peter Cock from https://raw.github.com/peterjc/picobio/master/acgt_dither/dither_rgb.py
+# Modified by Aaron Hardin
 
 import os
 import sys
