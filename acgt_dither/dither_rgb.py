@@ -3,6 +3,7 @@
 
 import os
 import sys
+import gzip
 from Bio import SeqIO
 from Bio.Seq import Seq
 import numpy as np
@@ -84,9 +85,16 @@ def main(argv):
         sys.stderr.write('cannot find %s\n'%(seq_file))
         sys.exit()
     
-    pdf_file = os.path.splitext(image)[0]+"_%s.pdf"
+    pdf_file = os.path.splitext(os.path.basename(image))[0]+"_%s.pdf"
 
-    seq = str(list(SeqIO.parse(seq_file, "fasta"))[0].seq)
+    if seq_file.endswith('.gz'):
+        seq_fh = gzip.open(seq_file)
+    else:
+        seq_fh = open(seq_file)
+
+    records = list(SeqIO.parse(seq_fh, "fasta"))
+    records.sort(cmp=lambda x,y: cmp(len(y),len(x)))
+    seq = str(records[0].seq)
     print len(seq)
     
     #Reduce runs of N to a single N to avoid visual distraction
